@@ -91,7 +91,7 @@ def test_update_pet_info_with_long_animal_type(name='', animal_type='who have a 
         print("\nДанные изменены")
 
 
-def test_update_pet_info_with_long_text_age(name='', animal_type='', age='and "Want to be free!"©Queen'):
+def test_update_pet_info_with_long_text_age(name='', animal_type='', age='and "Want to break free!" (пропеть как Queen)'):
     _, auth_key = pf.get_api_key(valid_email, valid_password)
     _, my_pets = pf.get_list_of_pets(auth_key, "my_pets")
     if len(my_pets['pets']) > 0:
