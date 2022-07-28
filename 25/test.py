@@ -1,88 +1,69 @@
-"""Задание 25.3.1
-Написать тест, который проверяет, что на странице со списком питомцев пользователя:
-
-Присутствуют все питомцы.
-Хотя бы у половины питомцев есть фото.
-У всех питомцев есть имя, возраст и порода.
-У всех питомцев разные имена.
-В списке нет повторяющихся питомцев. (Сложное задание).
-Подсказки для решения
-Количество питомцев взято из статистики пользователя.
-
-Количество питомцев с фото тоже можно посчитать, взяв статистику пользователя.
-Необходимо собрать в массив имена питомцев.
-Повторяющиеся питомцы — это питомцы, у которых одинаковое имя, порода и возраст.
-Вопросы для самопроверки
-Количество строк таблицы соответствует количеству питомцев в блоке статистики пользователя?
-При изменении количества проверяемых строк таблицы тест из задания 1 падает?
-Половина от чётного и нечётного количества фотографий выдаёт одинаковые результаты теста?
-При добавлении питомца с повторяющимся именем все тесты проходят?
-При добавлении питомца с повторяющимся именем, породой или возрастом все тесты проходят?
-
-Задание 25.5.1.
-В написанном тесте (проверка карточек питомцев) добавьте неявные ожидания всех элементов (фото, имя питомца, его возраст).
-В написанном тесте (проверка таблицы питомцев) добавьте явные ожидания элементов страницы.
-Чеклист для самопроверки:
-
- В тестах используется настройка implicitly-wait веб-драйвера.
-
- В тестах используются элементы класса WebDriverWait."""
+import pytest
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import settings as s
 
 
-"""
-def test_petfriends(selenium):
-    
-    # Open PetFriends base page:
-    selenium.get("https://petfriends1.herokuapp.com/")
+def test_show_my_pets(selenium):
+    # Переходим на страницу авторизации
+    pytest.driver.get(s.url + 'login')
 
-    # Find the field for search text input:
-    btn_newuser = selenium.find_element_by_xpath("//button[@onclick=\"document.location='/new_user';\"]")
+    # Устанавливаем явное ожидание появления поля 'email'
+    WebDriverWait(pytest.driver, 10).until(EC.presence_of_element_located((By.ID, 'email')))
 
-    btn_newuser.click()
+    # Вводим email
+    pytest.driver.find_element_by_id('email').send_keys(s.valid_email)
+    # Вводим пароль
+    pytest.driver.find_element_by_id('pass').send_keys(s.valid_password)
+    # Нажимаем на кнопку входа в аккаунт
+    pytest.driver.find_element_by_css_selector(s.css_my_pets_submit).click()
 
-    btn_exist_acc = selenium.find_element_by_link_text(u"У меня уже есть аккаунт")
-    btn_exist_acc.click()
+    # Устанавливаем явное ожидание появления navbar
+    WebDriverWait(pytest.driver, 10).until(EC.element_to_be_clickable((By.XPATH, s.xpath_navbar_my_pets)))
 
-    field_email = selenium.find_element_by_id("email")
-    field_email.click()
-    field_email.clear()
-    field_email.send_keys("isaid.zx@gmail.com")
+    # Проверяем, что мы оказались на главной странице пользователя
+    assert pytest.driver.find_element_by_tag_name('h1').text == "PetFriends"
+    # Нажимаем на кнопку "Мои питомцы"
+    pytest.driver.find_element_by_xpath(s.xpath_navbar_my_pets).click()
 
-    field_pass = selenium.find_element_by_id("pass")
-    field_pass.click()
-    field_pass.clear()
-    field_pass.send_keys("qwerty1234")
+    # Устанавливаем явное ожидание появления таблицы
+    WebDriverWait(pytest.driver, 10).until(EC.presence_of_element_located((By.ID, 'all_my_pets')))
 
-    btn_submit = selenium.find_element_by_xpath("//button[@type='submit']")
-    btn_submit.click()
+    pet_images = pytest.driver.find_elements_by_css_selector(s.css_my_pets_images)
+    pet_names = pytest.driver.find_elements_by_css_selector(s.css_my_pets_names)
+    pet_types = pytest.driver.find_elements_by_css_selector(s.css_my_pets_types)
+    pet_ages = pytest.driver.find_elements_by_css_selector(s.css_my_pets_ages)
+    pet_numbers = pytest.driver.find_elements_by_css_selector(s.css_my_pets_stat)[0].text.split('\n')[1].split(' ')[1]
 
-    # Save cookies of the browser after the login
-    with open('my_cookies.txt', 'wb') as cookies:
-        pickle.dump(selenium.get_cookies(), cookies)
+    # Проверяем все-ли питомцы есть в таблице
+    assert int(pet_numbers) == len(pet_names)
 
-    # Make the screenshot of browser window:
-    selenium.save_screenshot('result_petfriends.png')"""
+    pet_this_photo = 0
+    list_pet_names = []
+    list_pets = {}
+    for i in range(len(pet_names)):
+        # Считаем количество питомцев с фото
+        pet_this_photo += 0 if pet_images[i].get_attribute('src') == "" else 1
 
-from selenium.webdriver.common.keys import Keys
+        # Проверяем, что у всех питомцев есть имя, порода и возраст
+        assert pet_names[i].text != ''
+        assert pet_types[i].text != ''
+        assert pet_ages[i].text != ''
 
+        # Создаем список неповторяющихся имён питомцев
+        if pet_names[i].text not in list_pet_names:
+            list_pet_names.append(pet_names[i].text)
 
-def test_search_example(selenium):
-    """ Search some phrase in google and make a screenshot of the page. """
+        # Создаем словарь неповторяющихся питомцев
+        list_pets.update({pet_names[i].text + pet_types[i].text + pet_ages[i].text: (
+            pet_names[i].text, pet_types[i].text, pet_ages[i].text)})
 
-    # Open google search page:
-    selenium.get('https://google.com')
+    # Проверяем, что питомцев с фото не меньше половины
+    assert pet_this_photo >= (int(pet_numbers) + 1) // 2
 
-    # Find the field for search text input:
-    search_input = selenium.find_element_by_name('q')
+    # Проверяем, что все имена питомцев различны (количество неповторяющихся имен = кол-ву питомцев)
+    assert len(list_pet_names) == int(pet_numbers)
 
-    # Enter the text for search:
-    search_input.clear()
-    search_input.send_keys('first test')
-
-    # Click Search:
-    selenium.find_element_by_name("q").send_keys(Keys.RETURN)
-
-    # Make the screenshot of browser window:
-    selenium.save_screenshot('result.png')
-
-
+    # Проверяем, что в списке нет повторяющихся питомцев (кол-во в словаре = общему кол-ву питомцев)
+    assert len(list_pets) == int(pet_numbers)
